@@ -136,13 +136,13 @@
         });
 
         let satData = [];
-        let globalpath = ''
+        let globalPath = ''
 
         function loadSatellites(path) {
-            if(globalpath === path) {
+            if(globalPath === path) {
                 return;
             } else {
-                globalpath = path;
+                globalPath = path;
             }
             axios.get(path)
                 .then(response => {
@@ -172,7 +172,6 @@
         let intervalId = null;
         let satellitesMoving = true;
 
-                    
         function update() {
                 let time = new Date();
                 time = new Date(+time + TIME_STEP);
@@ -291,38 +290,41 @@
             lastClicked = now;
 
             // Update the mouse variable
-            mouse.x = ((event.clientX - 250) / (window.innerWidth - 250)) * 2 - 1; // Adjust for side panel width
+            mouse.x = ((event.clientX - 300) / (window.innerWidth - 300)) * 2 - 1; // Adjust for side panel width
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
             // Calculate objects intersecting the picking ray
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(Globe.children);
 
+            console.log(intersects);
+
             if (intersects.length > 0) {
-                const intersectedObject = intersects[0].object;
-                const satData = intersectedObject.userData.satData; // Retrieve satellite data from userData
-                console.log(satData);
-                if (satData) {
-                    axios.post('http://127.0.0.1:5000', { satellite_name: satData.name }, {
-                        headers: { 'Content-Type': 'application/json' }
-                    })
-                    .then(response => {
-                        const data = JSON.parse(response.data);
-                        requestAnimationFrame(() => {
-                            satelliteInfo.innerHTML = `<span class="lead-text">Satellite</span>: ${satData.name}<br><br>
-                            <span class="lead-text">Country of Origin</span>: ${data.origin}<br><br>
-                            <span class="lead-text">Cost</span>: ${data["cost"]}<br><br>
-                            <span class="lead-text">Launch Date</span>: ${data["launch_date"]}<br><br>
-                            <span class="lead-text">Purpose</span>: ${data["purpose"]}<br><br>
-                            <span class="lead-text">History</span>: ${data["history"]}<br><br>
-                            `;
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        satelliteInfo.innerHTML = 'Sorry, could not get the satellite info';
+                const selectedSatellite = intersects[0].object;
+                const satData = selectedSatellite.userData.satData;
+                console.log(satData); // Log satellite data for debugging
+
+                if(!satData) return
+
+                axios.post('http://127.0.0.1:5000', { satellite_name: satData.name }, {
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => {
+                    const data = JSON.parse(response.data);
+                    requestAnimationFrame(() => {
+                        satelliteInfo.innerHTML = `<span class="lead-text">Satellite</span>: ${satData.name}<br><br>
+                        <span class="lead-text">Country of Origin</span>: ${data.origin}<br><br>
+                        <span class="lead-text">Cost</span>: ${data.cost}<br><br>
+                        <span class="lead-text">Launch Date</span>: ${data.launch_date}<br><br>
+                        <span class="lead-text">Purpose</span>: ${data.purpose}<br><br>
+                        <span class="lead-text">History</span>: ${data.history}<br><br>
+                        `;
                     });
-                }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    satelliteInfo.innerHTML = 'Sorry, could not get the satellite info';
+                });
             } else {
                 satelliteInfo.innerHTML = 'Click on a satellite to see details here.';
             }
